@@ -1,10 +1,10 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 class EntityRequest(BaseModel):
-    name: str
-    business_type: str
-    location: str
+    keyword: Optional[str] = None
+    web_url: Optional[str] = None
+    location: Optional[str] = None
 
 class EntityResponse(BaseModel):
     primary_entity: str

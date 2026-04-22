@@ -17,11 +17,7 @@ def extract_json(text: str):
 
 
 def generate_entities(data):
-    prompt = build_entity_prompt(
-        data.name,
-        data.business_type,
-        data.location
-    )
+    prompt = build_entity_prompt(data)
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
