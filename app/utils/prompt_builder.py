@@ -7,7 +7,6 @@ Your job is to analyze input (keyword or website URL) and generate structured SE
 INPUT:
 - Keyword: {data.keyword}
 - Web URL: {data.web_url}
-- Location: {data.location}
 
 TASK:
 1. Detect user intent:
@@ -39,7 +38,7 @@ Return ONLY valid JSON. No markdown. No explanations.
   "primary_entity": "",
   "brand": "",
   "intent": "",
-  "location": "",
+  #"location": "",
   "services": [],
   "industry": [],
   "audience": [],

@@ -3,32 +3,77 @@ from app.core.config import OPENAI_API_KEY
 from app.utils.prompt_builder import build_entity_prompt
 import json
 import re
+import requests
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
+
+# ✅ Clean username generator
 def extract_username(data):
     brand = data.get("brand") or data.get("primary_entity", "")
-    return brand.replace(" ", "").lower()
+    username = re.sub(r'[^a-zA-Z0-9]', '', brand).lower()
+    return username or "defaultname"
 
 
+# ✅ Clean JSON extractor
 def extract_json(text: str):
     """
     Cleans AI response and extracts valid JSON
     """
-    # remove ```json and ```
     cleaned = re.sub(r"```json|```", "", text).strip()
     return json.loads(cleaned)
 
+
+# ✅ YouTube profile checker (REAL validation)
+def check_youtube_profile(username: str):
+    url = f"https://www.youtube.com/@{username}"
+    
+    try:
+        response = requests.get(url, timeout=5)
+        
+        if response.status_code == 200:
+            return {
+                "url": url,
+                "status": "exists"
+            }
+        else:
+            return {
+                "url": url,
+                "status": "not_found"
+            }
+    
+    except Exception as e:
+        return {
+            "url": url,
+            "status": "error",
+            "details": str(e)
+        }
+
+
+# ✅ Social link generator (with validation)
 def generate_social_links(username: str):
     return {
-        "youtube": f"https://www.youtube.com/@{username}",
-        "twitter": f"https://twitter.com/{username}",
-        "pinterest": f"https://www.pinterest.com/{username}/",
-        "reddit": f"https://www.reddit.com/user/{username}/",
-        "instapaper": f"https://www.instapaper.com/p/{username}"
+        "youtube": check_youtube_profile(username),  # ✅ validated
+        "twitter": {
+            "url": f"https://twitter.com/{username}",
+            "status": "generated"
+        },
+        "pinterest": {
+            "url": f"https://www.pinterest.com/{username}/",
+            "status": "generated"
+        },
+        "reddit": {
+            "url": f"https://www.reddit.com/user/{username}/",
+            "status": "generated"
+        },
+        "instapaper": {
+            "url": f"https://www.instapaper.com/p/{username}",
+            "status": "generated"
+        }
     }
 
 
+# ✅ Main function
 def generate_entities(data):
     prompt = build_entity_prompt(data)
 
@@ -38,7 +83,7 @@ def generate_entities(data):
         temperature=0.3
     )
 
-    content = response.choices[0].message.content
+    content = response.choices[0].message.content or ""
 
     print("\n🔥 AI Raw Response:\n", content)
 
@@ -46,12 +91,20 @@ def generate_entities(data):
         result = extract_json(content)
         print("\n✅ Parsed Response:\n", result)
 
-        # 🔥 NEW PART: generate social links
+        # 🔥 Generate username
         username = extract_username(result)
+
+        # 🔥 Generate social links
         social_links = generate_social_links(username)
 
+        # Attach to result
         result["social_profiles"] = social_links
-        result["sameAs"] = list(social_links.values())
+
+        # # ✅ Fix sameAs (extract URLs properly)
+        # result["sameAs"] = [
+        #     v["url"] if isinstance(v, dict) else v
+        #     for v in social_links.values()
+        # ]
 
         return result
 
